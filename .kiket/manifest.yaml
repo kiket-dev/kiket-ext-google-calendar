@@ -1,0 +1,123 @@
+model_version: "1.0"
+extension:
+  id: dev.kiket.ext.google-calendar
+  name: Google Calendar
+  version: 1.0.0
+  description: Sync Google Calendar events to team capacity planning. Automatically imports events and updates availability.
+  author: Kiket Team
+  homepage: https://github.com/kiket-dev/kiket-ext-google-calendar
+  delivery: http
+  callback:
+    url: ${EXTENSION_BASE_URL}
+    secret: env.KIKET_WEBHOOK_SECRET
+    timeout: 30000
+    required: true
+  activationEvents:
+    - calendar.sync
+    - calendar.list
+    - calendar.events
+  permissions:
+    - calendars:read
+    - capacity:write
+    - users:read
+  capabilities:
+    - calendar-sync
+  requires:
+    oauth_provider:
+      provider: google-oauth
+      scopes:
+        - https://www.googleapis.com/auth/calendar.readonly
+        - https://www.googleapis.com/auth/calendar.events.readonly
+      on_missing: prompt_connect
+  hooks:
+    - event: calendar.sync
+      timeout: 60000
+      retries: 2
+      description: Sync calendar events from Google Calendar
+    - event: calendar.list
+      timeout: 10000
+      retries: 1
+      description: List available Google Calendars
+    - event: calendar.events
+      timeout: 30000
+      retries: 2
+      description: Fetch events for a specific calendar
+  contributes:
+    commands:
+      - command: googleCalendar.sync
+        title: Sync Google Calendar
+        description: Manually trigger calendar sync
+        category: Calendar
+        icon: bi-arrow-repeat
+        keywords: ["google", "calendar", "sync"]
+        handler:
+          type: extension_event
+          event: googleCalendar.syncNow
+      - command: googleCalendar.listCalendars
+        title: List Google Calendars
+        description: View available Google Calendars
+        category: Calendar
+        icon: bi-calendar3
+        keywords: ["google", "calendar", "list"]
+        handler:
+          type: extension_event
+          event: googleCalendar.listCalendars
+  configuration:
+    default_sync_interval:
+      type: integer
+      default: "60"
+      min: 15
+      max: 1440
+      label: Default Sync Interval (minutes)
+      description: How often to sync calendar events
+    sync_window_days:
+      type: integer
+      default: "180"
+      min: 30
+      max: 365
+      label: Sync Window (days)
+      description: How far ahead to sync events
+    include_declined:
+      type: boolean
+      default: "false"
+      label: Include Declined Events
+      description: Include events you have declined
+    include_tentative:
+      type: boolean
+      default: "true"
+      label: Include Tentative Events
+      description: Include events you have tentatively accepted
+    event_type_mapping:
+      type: object
+      label: Event Type Mapping
+      description: Map Google Calendar colors/categories to event types
+      default: |
+        {
+          "holiday": ["holiday", "bank holiday"],
+          "pto": ["vacation", "pto", "out of office", "ooo"],
+          "travel": ["travel", "flight", "trip"],
+          "focus": ["focus", "deep work", "heads down"],
+          "training": ["training", "learning", "workshop"]
+        }
+  rate_limiting:
+    requests_per_minute: 60
+    burst: 20
+  setup:
+    - oauth:
+        title: Connect Google Account
+        description: Connect your Google account to sync calendars
+        provider: google-oauth
+        scopes:
+          - https://www.googleapis.com/auth/calendar.readonly
+          - https://www.googleapis.com/auth/calendar.events.readonly
+    - configure:
+        title: Configure Sync Settings
+        description: Set up how calendar events are synchronized
+        collect:
+          - default_sync_interval
+          - sync_window_days
+          - include_declined
+          - include_tentative
+  assets:
+    icon: ./public/icon.svg
+  hosting: internal
