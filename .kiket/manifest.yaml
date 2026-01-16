@@ -4,6 +4,7 @@ extension:
   name: Google Calendar
   version: 1.0.0
   description: Sync Google Calendar events to team capacity planning. Automatically imports events and updates availability.
+  sdk: ruby
   author: Kiket Team
   homepage: https://github.com/kiket-dev/kiket-ext-google-calendar
   delivery: http
